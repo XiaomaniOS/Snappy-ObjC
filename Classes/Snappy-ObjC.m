@@ -38,11 +38,23 @@
 
 - (NSData *) mn(compressedData) {
     struct snappy_env env;
-    NSAssert(snappy_init_env(&env) == 0, @"Initialization of a Snappy compression environment was not successful.");
+    if (snappy_init_env(&env) != 0) {
+        NSLog(@"Initialization of a Snappy compression environment was not successful.");
+        return nil;
+    }
+    
     size_t clen = snappy_max_compressed_length(self.length);
-    NSAssert(clen >= 0, @"The length of the compressed buffer shouldn't be zero");
+    if (clen < 0) {
+        NSLog(@"The length of the compressed buffer shouldn't be zero");
+        return nil;
+    }
+    
     char *buffer = malloc(clen);
-    NSAssert(snappy_compress(&env, self.bytes, self.length, buffer, &clen) == 0, @"Compression of data was not successful");
+    if (snappy_compress(&env, self.bytes, self.length, buffer, &clen) != 0) {
+        NSLog(@"Compression of data was not successful");
+        return nil;
+    }
+    
     snappy_free_env(&env);
     return [NSData dataWithBytesNoCopy:buffer length:clen];
 }
@@ -50,7 +62,9 @@
     size_t ulen;
     snappy_uncompressed_length(self.bytes, self.length, &ulen);
     char *buffer = malloc(ulen);
-    assert(snappy_uncompress(self.bytes, self.length, buffer) == 0);
+    if (snappy_uncompress(self.bytes, self.length, buffer) != 0) {
+        return nil;
+    }
     return [NSData dataWithBytesNoCopy:buffer length:ulen];
 }
 
